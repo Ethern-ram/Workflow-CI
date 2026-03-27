@@ -1,0 +1,52 @@
+name: Workflow CI pipeline
+
+on:
+  push:
+    paths:
+      - 'MLProject/**'
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build_deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install mlflow==2.19.0 pandas scikit-learn numpy
+
+      - name: Run MLflow Project
+        run: |
+          mlflow run MLProject/ --env-manager=local
+
+      - name: Save run info
+        id: run_info
+        run: |
+          # get latest run id from run_id.txt created by the script
+          export RUN_ID=$(cat run_id.txt)
+          echo "run_id=$RUN_ID" >> $GITHUB_ENV
+
+      - name: Build Docker Image
+        run: |
+          # Build Docker model from artifacts
+          mlflow models build-docker -m mlruns/0/${{ env.run_id }}/artifacts/model -n ${{ secrets.DOCKER_USERNAME }}/msml-model:latest
+
+      - name: Push Image to Docker Hub
+        run: |
+          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+          docker push ${{ secrets.DOCKER_USERNAME }}/msml-model:latest
+
+      - name: Upload artifact to GitHub (Opsional Google Drive via GDrive action)
+        uses: actions/upload-artifact@v3
+        with:
+          name: model-artifact
+          path: mlruns/0/${{ env.run_id }}/artifacts/model

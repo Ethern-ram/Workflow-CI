@@ -1,0 +1,12 @@
+amount
+name: msml-env
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - pip
+  - pip:
+    - scikit-learn
+    - pandas
+    - numpy
+    - mlflow==2.19.0
