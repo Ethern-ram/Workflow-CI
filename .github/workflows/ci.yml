@@ -46,7 +46,7 @@ jobs:
           docker push ${{ secrets.DOCKER_USERNAME }}/msml-model:latest
 
       - name: Upload artifact to GitHub (Opsional Google Drive via GDrive action)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: model-artifact
           path: mlruns/0/${{ env.run_id }}/artifacts/model
