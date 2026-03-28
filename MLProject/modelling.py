@@ -12,10 +12,9 @@ def load_data(data_dir):
     if not os.path.exists(train_path):
         print(f"Data not found at {data_dir}. Menggunakan data dummy.")
         # Create dummy data for CI to not fail if data is not committed
-        # Titanic has 7 features after preprocessing in automate script
-        X_train = pd.DataFrame(np.random.rand(100, 7), columns=['Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare', 'Embarked'])
+        X_train = pd.DataFrame(np.random.rand(100, 11))
         y_train = pd.Series(np.random.randint(0, 2, 100))
-        X_test = pd.DataFrame(np.random.rand(20, 7), columns=['Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare', 'Embarked'])
+        X_test = pd.DataFrame(np.random.rand(20, 11))
         y_test = pd.Series(np.random.randint(0, 2, 20))
         return X_train, X_test, y_train, y_test
 
@@ -27,7 +26,6 @@ def load_data(data_dir):
     X_test = df_test.drop('Survived', axis=1)
     y_test = df_test['Survived']
     return X_train, X_test, y_train, y_test
-
 
 def main():
     X_train, X_test, y_train, y_test = load_data("titanic_preprocessing")
@@ -42,9 +40,12 @@ def main():
         # Force model save to predictable artifacts path so CI knows
         mlflow.sklearn.log_model(rf, "model")
         
-        # Simpan run ID dalam file text untuk mempermudah docker build
-        with open("run_id.txt", "w") as f:
+        # Simpan run ID di direktori yang sama dengan script ini
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        run_id_path = os.path.join(script_dir, "..", "run_id.txt")
+        with open(run_id_path, "w") as f:
             f.write(run.info.run_id)
+        print(f"Run ID saved: {run.info.run_id}")
 
 if __name__ == "__main__":
     main()
