@@ -10,3 +10,4 @@ dependencies:
     - pandas
     - numpy
     - mlflow==2.19.0
+    - kagglehub
