@@ -12,12 +12,12 @@ jobs:
   build_deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: '3.10'
 
       - name: Install dependencies
         run: |
@@ -31,22 +31,28 @@ jobs:
       - name: Save run info
         id: run_info
         run: |
-          # get latest run id from run_id.txt created by the script
-          export RUN_ID=$(cat run_id.txt)
+          RUN_ID=$(cat run_id.txt)
           echo "run_id=$RUN_ID" >> $GITHUB_ENV
+          echo "Run ID: $RUN_ID"
+
+      - name: Find model artifact path
+        run: |
+          MODEL_PATH=$(find mlruns -name "MLmodel" | head -1 | xargs dirname)
+          echo "model_path=$MODEL_PATH" >> $GITHUB_ENV
+          echo "Model path: $MODEL_PATH"
 
       - name: Build Docker Image
         run: |
-          # Build Docker model from artifacts
-          mlflow models build-docker -m mlruns/0/${{ env.run_id }}/artifacts/model -n ${{ secrets.DOCKER_USERNAME }}/msml-model:latest
+          mlflow models build-docker -m ${{ env.model_path }} -n ${{ secrets.DOCKER_USERNAME }}/msml-titanic:latest
 
       - name: Push Image to Docker Hub
         run: |
           echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-          docker push ${{ secrets.DOCKER_USERNAME }}/msml-model:latest
+          docker push ${{ secrets.DOCKER_USERNAME }}/msml-titanic:latest
 
-      - name: Upload artifact to GitHub (Opsional Google Drive via GDrive action)
+      - name: Upload artifact to GitHub
         uses: actions/upload-artifact@v4
         with:
           name: model-artifact
-          path: mlruns/0/${{ env.run_id }}/artifacts/model
+          path: ${{ env.model_path }}
+
